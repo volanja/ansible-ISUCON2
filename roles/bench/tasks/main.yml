@@ -1,0 +1,43 @@
+- name: Install package
+  yum: pkg={{ item }} state=installed
+  with_items:
+    - openssl-devel
+    - git
+
+- name: Download nvm
+  git: repo=git://github.com/creationix/nvm.git dest=~/.nvm
+
+- name: autoload nvm
+  lineinfile: dest=~/.bashrc state=present regexp="nvm.sh"
+              insertafter=EOF line="source ~/.nvm/nvm.sh"
+
+- name: Install Node.js
+  shell: /bin/bash -c "source ~/.nvm/nvm.sh && nvm install {{ ver_node }} && nvm alias default {{ ver_node }}"
+
+- name: make http_loads
+  shell: make chdir={{ isucon2 }}/tools/http_load_isucon2/
+
+- name: Install npm for ISUCON2
+  shell: npm install chdir={{ isucon2 }}/tools/
+
+- name: Install npm for run
+  shell: npm install forever -g
+
+#- name: Setup Mysql
+#  shell: mysql -u root < {{ isucon2 }}/tools/sql/isumaster.sql
+
+- name: insert iptables rule
+  lineinfile: dest=/etc/sysconfig/iptables state=present regexp="{{ www_port_1 }}"
+              insertafter="^:OUTPUT " line="-A INPUT -p tcp --dport {{ www_port_1 }} -j ACCEPT"
+  notify: restart iptables
+
+- name: insert iptables rule
+  lineinfile: dest=/etc/sysconfig/iptables state=present regexp="{{ www_port_2 }}"
+              insertafter="^:OUTPUT " line="-A INPUT -p tcp --dport {{ www_port_2 }} -j ACCEPT"
+  notify: restart iptables
+
+- name: Run manager.js
+  shell: forever start manager.js  chdir={{ isucon2 }}/tools/
+
+- name: Run agent.js
+  shell: forever start agent.js chdir={{ isucon2 }}/tools/

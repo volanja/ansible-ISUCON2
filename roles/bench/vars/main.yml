@@ -1,0 +1,4 @@
+---
+ver_node: v0.8.12
+isucon2: /usr/local/src/isucon2
+www_port: 5001

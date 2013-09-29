@@ -1,0 +1,9 @@
+
+- name: Install Gem
+  gem: name={{ item }} state=present
+  with_items:
+    - bundler
+    - foreman
+
+- name: bundle
+  action: shell bundle install --deployment --without development chdir={{ isucon2 }}/webapp/ruby/

@@ -1,0 +1,7 @@
+- name: Install xxx
+  hosts: server
+  user: root
+  roles:
+    - ruby
+    - app
+    - bench

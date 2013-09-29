@@ -1,0 +1,59 @@
+---
+- name: Template epel.repo
+  template: src=epel.repo dest=/etc/yum.repos.d/epel.repo mode=0644
+
+- name: Template remi.repo
+  template: src=remi.repo dest=/etc/yum.repos.d/remi.repo mode=0644
+
+- name: Install(Group) development
+  yum: pkg='@development' state=latest
+
+- name: Install Vim
+  yum: pkg={{ item }} state=installed
+  with_items:
+    - vim
+
+- name: Install Git
+  yum: pkg={{ item }} state=installed
+  with_items:
+    - git
+
+- name: Install MySQL
+  yum: pkg={{ item }} state=present enablerepo=remi
+  with_items:
+    - mysql-server
+    - mysql-devel
+    - mysql-libs
+    - compat-mysql51
+    - mysql
+
+- name: Start mysqld
+  service: name=mysqld state=started
+
+- name: ensure mysqld is running automatically at boot time
+  action: command /sbin/chkconfig mysqld on
+
+- name: Install httpd
+  yum: pkg={{ item }} state=present
+  with_items:
+    - httpd
+
+- name: start httpd
+  service: name=httpd state=started
+
+- name: ensure httpd is running automatically at boot time
+  action: command /sbin/chkconfig httpd on
+
+- name: Download isucon source
+  git: repo=git://github.com/tagomoris/isucon2.git dest={{ isucon2 }}
+
+- name: Setup MySQL
+  action: shell mysql -u root < db_add_user.sql
+
+- name: Setup MySQL
+  action: shell mysql -u root < {{ isucon2 }}/webapp/config/database/isucon2.sql
+
+- name: insert iptables rule
+  lineinfile: dest=/etc/sysconfig/iptables state=present regexp="{{ www_port }}"
+  insertafter="^:OUTPUT " line="-A INPUT -p tcp --dport {{ www_port }} -j ACCEPT"
+  notify: restart iptables
